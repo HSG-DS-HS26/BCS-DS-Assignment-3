@@ -1,0 +1,5 @@
+# Keep everything out of the build context except what the Dockerfile COPYs.
+*
+!spark-defaults.conf
+!start-worker.sh
+!hadoop/

@@ -1,0 +1,129 @@
+# Spark standalone cluster: 1 master, 3 small workers, a dev container (the driver) and
+# HDFS (a NameNode, and a DataNode inside each worker so Spark can read blocks locally).
+# All Spark containers are built from .devcontainer/Dockerfile so versions match.
+
+x-worker: &worker
+  image: spark-lab-cluster:4.1.3  # built by spark-master
+  pull_policy: never
+  user: root                      # executors write to the shared /data bind mount
+  command: /opt/start-worker.sh   # HDFS DataNode + Spark worker
+  environment:
+    SPARK_WORKER_CORES: "1"
+    SPARK_WORKER_MEMORY: "512m"   # memory offered to executors
+    SPARK_DAEMON_MEMORY: "128m"   # the worker JVM itself (default 1g)
+    HDFS_DATANODE_OPTS: "-Xmx192m"
+  mem_limit: 1100m                # worker + 512m executor + DataNode + JVM off-heap
+  volumes:
+    - ./data:/data
+  depends_on:
+    - spark-master
+    - namenode
+
+services:
+  spark-master:
+    build:
+      context: .devcontainer
+      target: cluster
+    image: spark-lab-cluster:4.1.3
+    hostname: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host spark-master
+    environment:
+      SPARK_DAEMON_MEMORY: "256m"
+    mem_limit: 512m
+    ports:
+      - "8080:8080"   # master UI
+
+  # Each DataNode keeps its blocks in data/hdfs/<worker>, so you can open the blk_* files.
+  spark-worker-1:
+    <<: *worker
+    hostname: spark-worker-1
+    volumes:
+      - ./data:/data
+      - ./data/hdfs/spark-worker-1:/tmp/hdfs/data
+
+  spark-worker-2:
+    <<: *worker
+    hostname: spark-worker-2
+    volumes:
+      - ./data:/data
+      - ./data/hdfs/spark-worker-2:/tmp/hdfs/data
+
+  spark-worker-3:
+    <<: *worker
+    hostname: spark-worker-3
+    volumes:
+      - ./data:/data
+      - ./data/hdfs/spark-worker-3:/tmp/hdfs/data
+
+  # HDFS NameNode: keeps the file -> block -> DataNode map. UI on :9870.
+  # Metadata (fsimage, edit log) lives in data/hdfs/namenode. Delete all of data/hdfs
+  # to reset HDFS; deleting only the namenode folder makes the DataNodes refuse to join.
+  namenode:
+    image: spark-lab-cluster:4.1.3  # built by spark-master
+    pull_policy: never
+    hostname: namenode
+    user: root
+    command:
+      - bash
+      - -c
+      - |
+        [ -d /tmp/hdfs/name/current ] || hdfs namenode -format -nonInteractive
+        exec hdfs namenode
+    environment:
+      HDFS_NAMENODE_OPTS: "-Xmx256m"
+    mem_limit: 512m
+    volumes:
+      - ./data/hdfs/namenode:/tmp/hdfs/name
+    ports:
+      - "9870:9870"
+
+  # Replays jobs from the driver's event logs (data/spark-events), DataFlint tab included.
+  history-server:
+    image: spark-lab-cluster:4.1.3  # built by spark-master
+    pull_policy: never
+    hostname: history-server
+    user: root                      # creates the event log dir on the /data bind mount
+    command:
+      - bash
+      - -c
+      - |
+        mkdir -p /data/spark-events && chmod 777 /data/spark-events
+        # The dev container writes the server's public URL here when it starts
+        # (.devcontainer/history-url.sh). In Codespaces, restart with it, so redirects go
+        # to that URL instead of localhost:18080. Empty or missing: keep running as is.
+        url=/data/spark-events/history-url
+        rm -f $$url
+        /opt/spark/bin/spark-class org.apache.spark.deploy.history.HistoryServer &
+        pid=$$!
+        until [ -f $$url ]; do sleep 2; done
+        if [ -s $$url ]; then
+          kill $$pid; wait $$pid
+          export SPARK_HISTORY_OPTS="$$SPARK_HISTORY_OPTS -Dspark.ui.proxyRedirectUri=$$(cat $$url)"
+          exec /opt/spark/bin/spark-class org.apache.spark.deploy.history.HistoryServer
+        fi
+        wait $$pid
+    environment:
+      SPARK_DAEMON_MEMORY: "256m"
+      SPARK_HISTORY_OPTS: "-Dspark.history.fs.logDirectory=file:/data/spark-events -Dspark.history.fs.update.interval=5s"
+    mem_limit: 512m
+    volumes:
+      - ./data:/data
+    ports:
+      - "18080:18080"
+    depends_on:
+      - spark-master
+
+  dev:
+    build:
+      context: .devcontainer
+      target: dev
+    hostname: dev
+    entrypoint: ["sleep", "infinity"]
+    working_dir: /workspace
+    volumes:
+      - .:/workspace:cached
+      - ./data:/data
+    depends_on:
+      - spark-master
+      - namenode
+      - history-server  # creates data/spark-events, which the driver writes event logs to

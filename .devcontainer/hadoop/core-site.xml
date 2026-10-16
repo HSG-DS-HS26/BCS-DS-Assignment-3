@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<!-- Used by the HDFS daemons and the `hdfs` CLI. Spark does not read this file;
+     its settings are in spark-defaults.conf. -->
+<configuration>
+  <property><name>fs.defaultFS</name><value>hdfs://namenode:8020</value></property>
+</configuration>

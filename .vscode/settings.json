@@ -1,0 +1,11 @@
+{
+  // The "Hand in" button in the status bar, from the Task Buttons extension. It runs the
+  // task of the same name in tasks.json.
+  "VsCodeTaskButtons.tasks": [
+    {
+      "label": "$(cloud-upload) Hand in",
+      "task": "Hand in: write the PDF for Canvas",
+      "tooltip": "Commit and push first. Then this writes the PDF you upload to Canvas."
+    }
+  ]
+}

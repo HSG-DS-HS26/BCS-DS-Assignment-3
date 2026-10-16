@@ -1,0 +1,26 @@
+# Written by the jobs (the input data under data/ is committed)
+/data/output/
+/data/hdfs/
+
+# Spark local artifacts (created when a session runs without a cluster/metastore)
+spark-warehouse/
+metastore_db/
+derby.log
+spark-events/
+*.log
+!/data/logs/*.log
+
+# Java (run.sh output, VS Code Java extension output)
+build/
+bin/
+
+# Editors and OS
+.idea/
+.DS_Store
+Thumbs.db
+
+# The PDF that submit.sh writes for Canvas
+*-submission.pdf
+
+tmp/
+

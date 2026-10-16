@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // Hand in. Also the "Hand in" button in the status bar.
+    {
+      "label": "Hand in: write the PDF for Canvas",
+      "detail": "Commit and push first. Checks that GitHub has your work, then writes <you>-<repo>-submission.pdf to upload to Canvas.",
+      "type": "shell",
+      "command": "java submission/Submission.java",
+      "windows": { "command": "java submission\\Submission.java" },
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    }
+  ]
+}

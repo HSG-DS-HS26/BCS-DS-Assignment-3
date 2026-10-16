@@ -1,0 +1,41 @@
+version: 1
+
+assignment: bcs-ds-3
+
+# The viva covers Tasks 1 to 5 and only the parts you wrote: the TODOs in
+# WordCount.java, Join.java and PageRank.java, your version of ServerErrors.java,
+# and your answers in CTO_REPORT.md.
+
+
+goals:
+  - id: rdd-pipelines
+    level: apply
+    goal: >
+      Explain your WordCount, Join and PageRank code: which transformations play
+      the part of Map and of Reduce in WordCount.java, which records an inner
+      join keeps and drops, and why the PageRank loop starts no job. Explain
+      what caching links saved, with the numbers of your runs with and without
+      .cache().
+
+  - id: distributed-execution
+    level: analyse
+    goal: >
+      Explain what a job, a stage and a task are, and how partitions determine
+      the number of tasks. Point to every shuffle in your join and in your
+      version of ServerErrors, say which operation causes it and what data
+      crosses the network. Explain why sortByKey starts a job although it is a
+      transformation.
+
+  - id: adapting-pipelines
+    level: evaluate
+    goal: >
+      Justify each change to ServerErrors by the Shuffle Write, the stages and
+      the duration it saved, and argue why your version prints the same result.
+
+  - id: hdfs-and-failures
+    level: understand
+    goal: >
+      Explain how HDFS stores a file as replicated blocks, what the NameNode and
+      the DataNodes do, and how Spark uses block locations. Describe from your
+      run with --problematic-system which stages Spark repeated and why the job
+      did not start over.

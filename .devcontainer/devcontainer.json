@@ -1,0 +1,38 @@
+{
+  "name": "Spark cluster (1 master, 3 workers)",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "dev",
+  "runServices": ["spark-master", "spark-worker-1", "spark-worker-2", "spark-worker-3", "namenode", "history-server", "dev"],
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "root",
+  // history-url: gives the History Server its Codespaces URL, so its redirects don't point at localhost.
+  // ports: relays the web UIs into the dev container, so Codespaces can forward them.
+  "postStartCommand": {
+    "history-url": "bash .devcontainer/history-url.sh",
+    "ports": "bash .devcontainer/ports.sh"
+  },
+  // Plain numbers are ports of the dev container; "service:port" reaches another Compose service.
+  "forwardPorts": ["spark-master:8080", "history-server:18080", "namenode:9870"],
+  "portsAttributes": {
+    "8080": { "label": "Spark master UI" },
+    "18080": { "label": "History Server (all jobs)" },
+    // The driver's own UI exists only while a job runs; the History Server shows the same.
+    "4040-4050": { "onAutoForward": "ignore" },
+    "9870": { "label": "HDFS NameNode UI" }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "8gb" },
+  "customizations": {
+    "vscode": {
+      // spencerwmiles.vscode-task-buttons: the "Hand in" button in the status bar; see .vscode/settings.json.
+      "extensions": ["redhat.java", "spencerwmiles.vscode-task-buttons"],
+      "settings": {
+        // Every folder is a source root of its own: the folders start with a digit, which a
+        // package name can't, so the classes are in the default package.
+        "java.project.sourcePaths": ["src/common", "src/01_wordcount", "src/02_join", "src/03_pagerank", "src/04_improve_speed"],
+        "java.project.referencedLibraries": ["/opt/spark/jars/*.jar"],
+        "java.jdt.ls.vmargs": "-XX:+UseParallelGC -Xmx768m -Xms100m"
+      }
+    }
+  }
+}
